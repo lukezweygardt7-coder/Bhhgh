@@ -32,7 +32,14 @@ jobs:
 
       - name: Build jar
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle build --no-daemon --stacktrace
+        run: |
+          gradle build --no-daemon > build.log 2>&1 || {
+            MSG=$(grep -A 15 -E 'What went wrong|error:' build.log | head -30 | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Build failed - the cause::$MSG"
+            tail -40 build.log
+            exit 1
+          }
+          tail -5 build.log
 
       - name: Upload jar
         uses: actions/upload-artifact@v4
